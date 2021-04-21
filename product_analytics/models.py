@@ -1008,7 +1008,8 @@ class MarketProductItems(models.Model):
 
 class MarketProductParameters(models.Model):
     parameterid = models.AutoField(db_column='parameterID', primary_key=True)  # Field name made lowercase.
-    marketgroupid = models.ForeignKey(MarketProductGroups, models.DO_NOTHING, db_column='marketGroupID')  # Field name made lowercase.
+    marketgroupid = models.ForeignKey(MarketProductGroups, models.DO_NOTHING,
+                                      db_column='marketGroupID', related_name='rn_market_product_parameters')  # Field name made lowercase.
     name = models.CharField(max_length=255, blank=True, null=True)
     value = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(blank=True, null=True)

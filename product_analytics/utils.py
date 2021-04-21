@@ -15,9 +15,11 @@ from datetime import datetime, timedelta, date
 from calendar import monthrange
 from product_analytics.models import MarketOrdersProducts, MarketOrders
 from django.db.models import Count
+import pandas as pd
+from IPython.display import display, HTML
 
 
-def previous_period(currently_date: date, period: str):
+def count_currently_and_previous_date(currently_date: date, period: str):
     """
     count for currently and previous start an end dates for week, month, year
     :param currently_date: 2020-03-18
@@ -115,19 +117,47 @@ def count_active_clients_for_period(start_date: date, end_date: date,):
             }
 
 
+def revenue_by_brands(start_date: date, end_date:date):
+    orders = MarketOrdersProducts.objects.filter(
+        productid__marketgroupid__rn_market_product_parameters__name="Бренд").filter(orderid__status=4).filter(
+        created_at__range=(start_date, end_date)). \
+        values_list('orderid', 'productid', 'price', 'quantity', 'discount',
+                    'productid__marketgroupid__rn_market_product_parameters__name',
+                    'productid__marketgroupid__rn_market_product_parameters__value')
+
+    df = pd.DataFrame(orders, columns=['orderid', 'productid', 'price', 'quantity', 'discount', 'name_brand', 'brand'])
+    df['discount'] = pd.to_numeric(df['discount'])
+    df['bread'] = df['brand'].str.strip()
+    df['final_price'] = df.apply(lambda row: row.price * row.quantity * (100 - row.discount), axis=1)
+    brends_revenue = df.drop_duplicates(subset=['brand'])[['brand', 'final_price']].sort_values('final_price', ascending=False)
+    return brends_revenue.to_html()
+
+
 def dashboard_report(start_date, period):
-    dates = previous_period(start_date, period)
+    dates = count_currently_and_previous_date(start_date, period)
     currently_period_revenue = count_revenue_for_period(dates.get('currently_start'), dates.get('currently_end'))
     previous_period_revenue = count_revenue_for_period(dates.get('previous_start'), dates.get('previous_end'))
     currently_active_clients = count_active_clients_for_period(dates.get('currently_start'), dates.get('currently_end'))
     previous_active_clients = count_active_clients_for_period(dates.get('previous_start'), dates.get('previous_end'))
-    return currently_period_revenue, previous_period_revenue, currently_active_clients, previous_active_clients
+    df_revenue = pd.DataFrame([count_revenue_for_period(dates.get('currently_start'), dates.get('currently_end')),
+                       count_revenue_for_period(dates.get('previous_start'), dates.get('previous_end'))],
+                      index=['Текущий', 'Предыдущий'])
+    df_clients = pd.DataFrame([count_active_clients_for_period(dates.get('currently_start'), dates.get('currently_end')),
+                               count_active_clients_for_period(dates.get('previous_start'), dates.get('previous_end'))],
+                               index=['Текущий', 'Предыдущий'])
+    return df_revenue.to_html(float_format=lambda x: '%10.2f' % x), \
+           df_clients.to_html(float_format=lambda x: '%10.2f' % x)
+
+        # currently_period_revenue, previous_period_revenue, currently_active_clients, previous_active_clients
 
 
 def main():
     start_date = date.today()
     period = 'week'
+    # start_date = date(2021, 3, 10)
+    # end_date = date(2021, 3, 21)
 
+    dashboard_report(start_date, period)
     pass
 
 

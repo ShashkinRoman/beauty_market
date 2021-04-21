@@ -7,5 +7,11 @@
       <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
       <jdbc-url>jdbc:mysql://127.0.0.1:2227/beautybox_crm</jdbc-url>
     </data-source>
+    <data-source source="LOCAL" name="prod" uuid="2c764133-e3cc-4753-b4f1-371f6aa368cd">
+      <driver-ref>mysql.8</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://localhost:2227/beautybox_crm</jdbc-url>
+    </data-source>
   </component>
 </project>
