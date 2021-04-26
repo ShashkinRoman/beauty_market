@@ -1,22 +1,8 @@
-"""выручка за на текущей неделе, в сравнении с динамикой предыдущей
- - общая выручка
- - по точкам
- - пропорции выручки сколько от старых клиентов, сколько от новых
- - пропорции выручки сколько от старых клиентов, сколько от новых
- - средний чек
- - количество  старых клиентов
- - выручка за весь прошый месяц
- - количество новых клиентов в этом месяце, сравнение с предыдущим
- Выручка по точкам в текущем месяце
- - по точкам
- - общая
- """
-from datetime import datetime, timedelta, date
+from datetime import timedelta, date
 from calendar import monthrange
 from product_analytics.models import MarketOrdersProducts, MarketOrders
 from django.db.models import Count
 import pandas as pd
-from IPython.display import display, HTML
 
 
 def count_currently_and_previous_date(currently_date: date, period: str):
@@ -127,7 +113,9 @@ def revenue_by_brands(start_date: date, end_date:date):
 
     df = pd.DataFrame(orders, columns=['orderid', 'productid', 'price', 'quantity', 'discount', 'name_brand', 'brand'])
     df['discount'] = pd.to_numeric(df['discount'])
-    df['bread'] = df['brand'].str.strip()
+    df['brand'] = df['brand'].str.strip()
+    df['brand'] = df['brand'].str.lower()
+    df['brand'] = df['brand'].str.replace(' ', '')
     df['final_price'] = df.apply(lambda row: row.price * row.quantity * (100 - row.discount), axis=1)
     brends_revenue = df.drop_duplicates(subset=['brand'])[['brand', 'final_price']].sort_values('final_price', ascending=False)
     return brends_revenue.to_html()

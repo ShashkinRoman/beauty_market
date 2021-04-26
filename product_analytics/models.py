@@ -916,6 +916,7 @@ class MarketFilterItems(models.Model):
 class MarketOrders(models.Model):
     orderid = models.AutoField(db_column='orderID', primary_key=True)  # Field name made lowercase.
     userid = models.ForeignKey('Users', models.DO_NOTHING, db_column='userID', blank=True, null=True)  # Field name made lowercase.
+    sum = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True)
     firstname = models.CharField(db_column='firstName', max_length=255, blank=True, null=True)  # Field name made lowercase.
     lastname = models.CharField(db_column='lastName', max_length=255, blank=True, null=True)  # Field name made lowercase.
     patronymic = models.CharField(max_length=255, blank=True, null=True)

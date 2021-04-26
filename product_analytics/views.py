@@ -1,29 +1,15 @@
-from django.shortcuts import render
-from product_analytics.utils import dashboard_report
+from django.shortcuts import HttpResponse
+from product_analytics.utils import dashboard_report, revenue_by_brands, count_currently_and_previous_date
+from product_analytics.cohorts import cohorts
 from datetime import date
 
 
 # Create your views here.
-
-
 def dashboard(request):
-    currently_period_revenue, previous_period_revenue, \
-    currently_active_clients, previous_active_clients = dashboard_report(date.today(), 'week')
-    return render(request, 'dashboard.html', {'currently_online_revenue': '%.1f' % currently_period_revenue.get('online_revenue'),
-                                              'currently_online_discount': '%.1f' % currently_period_revenue.get('online_discount'),
-                                              'currently_offline_revenue': '%.1f' % currently_period_revenue.get('offline_revenue'),
-                                              'currently_offline_discount': '%.1f' % currently_period_revenue.get('offline_discount'),
+    dates = count_currently_and_previous_date(date.today(), 'month')
+    revenue_brands = revenue_by_brands(dates.get('currently_start'), dates.get('currently_end'))
+    revenue, clients = dashboard_report(date.today(), 'month')
+    cohort = cohorts()
+    html = "<html><body>%s</body></html>" % revenue, clients, revenue_brands, cohort
+    return HttpResponse(html)
 
-                                              'previous_online_revenue': '%.1f' % previous_period_revenue.get('online_revenue'),
-                                              'previous_online_discount': '%.1f' % previous_period_revenue.get('online_discount'),
-                                              'previous_offline_revenue': '%.1f' % previous_period_revenue.get('offline_revenue'),
-                                              'previous_offline_discount': '%.1f' % previous_period_revenue.get('offline_discount'),
-
-                                              'currently_all_clients': '%.1f' % currently_active_clients.get("all_clients"),
-                                              'currently_new_clients': '%.1f' % currently_active_clients.get("new_clients"),
-                                              'currently_returness_clients': '%.1f' % currently_active_clients.get("returness_clients"),
-
-                                              'previous_all_clients': '%.1f' % previous_active_clients.get("all_clients"),
-                                              'previous_new_clinets': '%.1f' % previous_active_clients.get("new_clients"),
-                                              'previous_returness_clinets': '%.1f' % previous_active_clients.get("returness_clients")
-                                              })
