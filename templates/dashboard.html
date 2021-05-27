@@ -2,32 +2,190 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-{#    <title><b>Dashboard Beautymarket</b></title>#}
-    Выручка онлайн на текущей неделе = {{ currently_online_revenue }}<br>
-    Выручка офлайн на на текущей неделе = {{ currently_offline_revenue }}<br>
-    <br>
-    Скидки онлайн на текущей неделе = {{ currently_online_discount }}<br>
-    Скидки офлайн на текущей неделе = {{ currently_offline_discount }}<br>
-    <br>
-    Выручка онлайн на предыдущей неделе = {{ previous_online_revenue }}<br>
-    Выручка офлайн на на предыдущей неделе = {{ previous_offline_revenue }}<br>
-    <br>
-    Скидки онлайн на предыдущей неделе = {{ previous_online_discount }}<br>
-    Скидки офлайн на предыдущей неделе = {{ previous_offline_discount }}<br>
-    <br>
-    на этой неделе клиентов = {{ currently_all_clients }}<br>
-    Новых = {{ currently_new_clients }}<br>
-    Вернувшихся = {{ currently_returness_clients }}<br>
-    <br>
-    на предыдущей неделе клиентов = {{ previous_all_clients }}<br>
-    Новых = {{ previous_new_clinets }}<br>
-    Вернувшихся = {{ previous_returness_clinets }}<br>
-
-{#    {{ revenue }}#}
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet"
+      integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
 
 </head>
 <body>
+{#{{ form }}#}
+    <form class="", action="{% url 'analytics_url' %}", method="post">
+        {% csrf_token %}
+        {% for field in form %}
+            <div class="form-group">
+                {% if field.errors %}
+                    <div class="alert.alert-danger">
+                        {{ field.errors }}
+                    </div>
+                {% endif %}
+            {{ field.label }}
+            {{ field }} (пример: 2020-11-12)
+            </div>
+        {% endfor %}
+        <button type="submit" name="button" class="btn btn-primary">Создать заказ</button>
+    </form>
+{#{{ revenue }}#}
+<div class="container">
+  <h2 class="text-center"><u>Онлайн и офлайн выручка</u></h2><br>
+  <table class="table table-white table-striped">
+        <thead>
+          <tr>
+            <th>Онлайн выручка тек/пред</th>
+            <th>Онлайн скидки тек/пред</th>
+            <th>Офлайн выручка тек/пред</th>
+            <th>Офлайн скидки тек/пред</th>
+          </tr>
+         </thead>
+        <tbody>
+        <!-- jinja2 Technique -->
 
-</body>
+        {% if revenue %}
+        {% for i in revenue %}
+          <tr>
+            <td>{{i.online_revenue}}</td>
+            <td>{{i.online_discount}}</td>
+            <td>{{i.offline_revenue}}</td>
+            <td>{{i.offline_discount}}</td>
+          </tr>
+        {% endfor %}
+        {% endif %}
+        </tbody>
+  </table>
+</div>
+
+
+<div class="container">
+  <h2 class="text-center"><u>Выручка от новых и вернувшихся клиентов</u></h2><br>
+  <table class="table table-white table-striped">
+        <thead>
+          <tr>
+            <th>Выручка новых лиентов тек/пред</th>
+            <th>Выручка от вернувшихся клиентов тек/пред</th>
+          </tr>
+         </thead>
+        <tbody>
+        <!-- jinja2 Technique -->
+
+        {% if revenue_by_type_clients %}
+        {% for it in revenue_by_type_clients %}
+          <tr>
+            <td>{{it.revenue_by_new_clients}}</td>
+            <td>{{it.revenue_by_returning_clients}}</td>
+          </tr>
+        {% endfor %}
+        {% endif %}
+        </tbody>
+  </table>
+</div>
+
+<div class="container">
+  <h2 class="text-center"><u>Количество новых и вернувшихся клиентов</u></h2><br>
+  <table class="table table-white table-striped">
+        <thead>
+          <tr>
+            <th>Всего клиентов тек/пред</th>
+            <th>Количество новых клиентов тек/пред</th>
+            <th>Количество вернувшихся клиентов тек/пред</th>
+          </tr>
+         </thead>
+        <tbody>
+        <!-- jinja2 Technique -->
+
+        {% if clients %}
+        {% for it in clients %}
+          <tr>
+            <td>{{it.all_clients}}</td>
+            <td>{{it.new_clients}}</td>
+            <td>{{it.returness_clients}}</td>
+          </tr>
+        {% endfor %}
+        {% endif %}
+        </tbody>
+  </table>
+</div>
+
+
+<div class="container">
+  <h2 class="text-center"><u>Выручка по брендам</u></h2><br>
+  <table class="table table-white table-striped">
+        <thead>
+          <tr>
+            <th>Бренд</th>
+            <th>Выручка</th>
+          </tr>
+         </thead>
+        <tbody>
+        <!-- jinja2 Technique -->
+
+        {% if revenue_brands %}
+        {% for it in revenue_brands %}
+          <tr>
+            <td>{{it.brand}}</td>
+            <td>{{it.final_price}}</td>
+          </tr>
+        {% endfor %}
+        {% endif %}
+        </tbody>
+  </table>
+</div>
+
+
+<div class="container">
+  <h2 class="text-center"><u>Количество отправок по городам за текущий период</u></h2><br>
+  <table class="table table-white table-striped">
+        <thead>
+          <tr>
+            <th>Город</th>
+            <th>Количество</th>
+            <th>Выручка</th>
+            <th>Средний чек</th>
+          </tr>
+         </thead>
+        <tbody>
+        <!-- jinja2 Technique -->
+
+        {% if sendings_by_city_at_range %}
+        {% for it in sendings_by_city_at_range %}
+          <tr>
+            <td>{{it.city}}</td>
+            <td>{{it.quantity}}</td>
+            <td>{{it.sum}}</td>
+            <td>{{it.average}}</td>
+
+          </tr>
+        {% endfor %}
+        {% endif %}
+        </tbody>
+  </table>
+</div>
+
+
+<div class="container">
+  <h2 class="text-center"><u>Количество отправок по городам за все время</u></h2><br>
+  <table class="table table-white table-striped">
+        <thead>
+          <tr>
+            <th>Город</th>
+            <th>Количество</th>
+            <th>Выручка</th>
+            <th>Средний чек</th>
+          </tr>
+         </thead>
+        <tbody>
+        <!-- jinja2 Technique -->
+
+        {% if sendings_by_city_all %}
+        {% for it in sendings_by_city_all %}
+          <tr>
+            <td>{{it.city}}</td>
+            <td>{{it.quantity}}</td>
+            <td>{{it.sum}}</td>
+            <td>{{it.average}}</td>
+
+          </tr>
+        {% endfor %}
+        {% endif %}
+        </tbody>
+  </table>
+</div>
+</body>Создать заказ
 </html>

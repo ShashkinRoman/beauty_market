@@ -1,14 +1,16 @@
+from collections import Counter
 from datetime import timedelta, date
 from calendar import monthrange
 from product_analytics.models import MarketOrdersProducts, MarketOrders
 from django.db.models import Count
 import pandas as pd
+import numpy as np
 
 
-def count_currently_and_previous_date(currently_date: date, period: str):
+def count_currently_and_previous_date(currently_date, period: str):
     """
     count for currently and previous start an end dates for week, month, year
-    :param currently_date: 2020-03-18
+    :param currently_date: 2020-03-18 or [start_date, end_date]
     :param period: 'week' or 'month' or 'year'
     :return: dict with dates
     """
@@ -29,6 +31,14 @@ def count_currently_and_previous_date(currently_date: date, period: str):
         currently_start = date(currently_date.year, 1, 1)
         previous_start = date(int(currently_date.year) - 1, 1, 1)
         previous_end = date(int(currently_date.year) - 1, currently_date.month, currently_date.day)
+
+    if type(currently_date) == list:
+        currently_start = currently_date[0]
+
+        # delta = currently_date[1] - currently_date[0]
+        previous_start = currently_date[0] - (currently_date[1] - currently_date[0])
+        previous_end = currently_date[0]
+        currently_date = currently_date[1]
 
     return {'currently_start': currently_start,
             'currently_end': currently_date,
@@ -126,7 +136,7 @@ def revenue_by_brands(start_date: date, end_date: date):
         df['brand'] = df['brand'].str.replace(' ', '')
         df['final_price'] = df.apply(lambda row: row.price * row.quantity * (100 - row.discount), axis=1)
         brends_revenue = df.drop_duplicates(subset=['brand'])[['brand', 'final_price']].sort_values('final_price', ascending=False)
-        return brends_revenue.to_html()
+        return brends_revenue.to_json(double_precision=1,  orient='records')
 
 
 def count_revenue_by_type_clients(start_date: date, end_date: date):
@@ -149,8 +159,8 @@ def count_revenue_by_type_clients(start_date: date, end_date: date):
             'revenue_by_returning_clients': float(revenue_by_returning_clients['sum'])}
 
 
-def dashboard_report(start_date, period):
-    dates = count_currently_and_previous_date(start_date, period)
+def dashboard_report(dates):
+    # dates = count_currently_and_previous_date(start_date, period)
     # currently_period_revenue = count_revenue_for_period(dates.get('currently_start'), dates.get('currently_end'))
     # previous_period_revenue = count_revenue_for_period(dates.get('previous_start'), dates.get('previous_end'))
     # currently_active_clients = count_active_clients_for_period(dates.get('currently_start'), dates.get('currently_end'))
@@ -165,19 +175,113 @@ def dashboard_report(start_date, period):
                                                count_revenue_by_type_clients(dates.get('previous_start'),
                                                                                dates.get('previous_end'))],
                                               index=['Выручка текущий период', 'Выручка предыдущий период'])
-    return df_revenue.to_html(float_format=lambda x: '%10.2f' % x), \
-           df_clients.to_html(float_format=lambda x: '%10.2f' % x), \
-           df_revenue_by_type_clients.to_html(float_format=lambda x: '%10.2f' % x)
+    return df_revenue.to_json(double_precision=1,  orient='records'), \
+           df_clients.to_json(double_precision=1,  orient='records'), \
+           df_revenue_by_type_clients.to_json(double_precision=1,  orient='records')
 
 
-        # currently_period_revenue, previous_period_revenue, currently_active_clients, previous_active_clients
+def count_and_sum_products(product_id: str, start_date: date, end_date: date):
+    """market_orders -> product_id ->  sale(True)"""
+    all_orders = MarketOrdersProducts.objects.filter(orderid__status=4). \
+        filter(created_at__range=(start_date, end_date)).filter(productid=product_id).filter(
+        productid__rn_market_products__productid__sale=1). \
+        values_list('price', 'quantity', 'discount')
+    df = pd.DataFrame(all_orders, columns=['price', 'quantity', 'discount'])
+    summ_price = df.sum(axis=0, skipna=True)[0]
+    count_quantity = df.sum(axis=0, skipna=True)[1]
+    return summ_price, count_quantity
+# currently_period_revenue, previous_period_revenue, currently_active_clients, previous_active_clients
+
+
+# def stock_analityks(product_id: str, start_date: date, end_date: date):
+#     delta = end_date - start_date
+#     before_dates = []
+#     after_dates = []
+#     start_ = start_date
+#     end_ = end_date
+#     for period in range(0, 9):
+#         before_dates.append((start_ - delta, start_))
+#         start_ = start_ - delta
+#         after_dates.append((end_, end_ + delta))
+#         end_ = end_ + delta
+#     before = {}
+#     for period in before_dates:
+#         try:
+#             before[f'{period[0].strftime("%Y-%m-%d")}---{period[1].strftime("%Y-%m-%d")}'] = \
+#             count_and_sum_products(product_id, period[0], period[1])
+#         except Exception as e:
+#             print(e)
+
+
+def sending_by_city(start_date, end_date):
+    all_sending = MarketOrders.objects.filter(city__isnull=False).filter(status=4).values_list('city', 'sum')
+    all_sending_at_range = MarketOrders.objects.filter(created_at__range=(start_date, end_date)).\
+        filter(city__isnull=False).filter(status=4).values_list('city', 'sum')
+
+    all_sending_correct = []
+    for i in all_sending:
+        a = ''.join(i[0].split())
+        a = a.replace('г.', '')
+        a = a.replace('с.', '')
+        a = a.replace('Г.', '')
+        a = a.replace('С.', '')
+        a = a.replace('П.', '')
+        a = a.replace('п.', '')
+        # a = a.replace(' ', '')
+        a = a.lower()
+        all_sending_correct.append((a, i[1]))
+
+    all_sending_at_range_correct = []
+    for i in all_sending_at_range:
+        a = ''.join(i[0].split())
+        a = a.replace('г.', '')
+        a = a.replace('с.', '')
+        a = a.replace('Г.', '')
+        a = a.replace('С.', '')
+        a = a.replace('П.', '')
+        a = a.replace('п.', '')
+        # a = a.replace(' ', '')
+        a = a.lower()
+        all_sending_at_range_correct.append((a, i[1]))
+
+
+
+    df_all_sending = pd.DataFrame(all_sending_correct, columns=['city', 'sum'])
+    df_all_sending.astype({'sum': 'float64'})
+    df_all_sending.insert(len(df_all_sending.columns), 'quantity', 0, allow_duplicates=False)
+
+
+
+    grouped = df_all_sending.groupby(['city'])
+    cohorts = grouped.agg({'sum': np.sum, 'quantity': pd.Series.count})
+    cohorts['average'] = cohorts['sum'] / cohorts['quantity']
+    cohorts['city'] = cohorts.index
+    df_all_sending = cohorts.sort_values(['quantity'], ascending=False)
+
+
+
+
+
+    df_sending_at_range = pd.DataFrame(all_sending_at_range_correct, columns=['city', 'sum'])
+    df_sending_at_range.astype({'sum': 'float64'})
+    df_sending_at_range.insert(len(df_sending_at_range.columns), 'quantity', 0, allow_duplicates=False)
+
+    grouped = df_sending_at_range.groupby(['city'])
+    cohorts = grouped.agg({'sum': np.sum, 'quantity': pd.Series.count})
+    cohorts['average'] = cohorts['sum'] / cohorts['quantity']
+    cohorts['city'] = cohorts.index
+    df_sending_at_range = cohorts.sort_values(['quantity'], ascending=False)
+
+    return df_sending_at_range.to_json(orient='records', double_precision=0), \
+           df_all_sending.to_json(orient='records', double_precision=0)
 
 
 # def main():
 #     start_date = date.today()
-#     period = 'week'
+    period = 'week'
 start_date = date(2021, 4, 1)
 end_date = date(2021, 5, 1)
+product_id = 12543
     #
     # dashboard_report(start_date, period)
     # pass

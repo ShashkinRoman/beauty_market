@@ -959,7 +959,8 @@ class MarketOrders(models.Model):
 class MarketOrdersProducts(models.Model):
     itemid = models.AutoField(db_column='itemID', primary_key=True)  # Field name made lowercase.
     orderid = models.ForeignKey(MarketOrders, models.DO_NOTHING, db_column='orderID', blank=True, null=True, related_name="rn_product_in_orders")  # Field name made lowercase.
-    productid = models.ForeignKey('MarketProducts', models.DO_NOTHING, db_column='productID', blank=True, null=True)  # Field name made lowercase.
+    productid = models.ForeignKey('MarketProducts', models.DO_NOTHING, db_column='productID', blank=True, null=True,
+                                  related_name='rn_market_products')  # Field name made lowercase.
     price = models.FloatField()
     saleprice = models.FloatField(db_column='salePrice', blank=True, null=True)  # Field name made lowercase.
     quantity = models.PositiveIntegerField()
