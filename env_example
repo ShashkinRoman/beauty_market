@@ -1,0 +1,7 @@
+DB_NAME=test_bm
+DB_USER=rest_user
+DB_PASSWORD=test_pass
+HOST=127.0.0.1
+PORT=3306
+ENVIRONMENT=dev
+SECRET_KEY=asdkfjldfknaldbasdfknas;ldkn',c
